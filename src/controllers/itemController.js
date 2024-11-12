@@ -62,3 +62,44 @@ exports.deleteItem = (req, res) => {
     res.status(200).json({ message: 'Item eliminado con éxito' });
   });
 };
+
+exports.getItems = (req, res) => {
+  const { name, minPrice, maxPrice, sortBy, order } = req.query;
+
+  let query = 'SELECT * FROM items';
+  let queryParams = [];
+
+
+  if (name) {
+    query += ' WHERE name LIKE ?';
+    queryParams.push(`%${name}%`);
+  }
+
+  if (minPrice) {
+    query += name ? ' AND price >= ?' : ' WHERE price >= ?';
+    queryParams.push(minPrice);
+  }
+
+  if (maxPrice) {
+    query += name || minPrice ? ' AND price <= ?' : ' WHERE price <= ?';
+    queryParams.push(maxPrice);
+  }
+
+  if (sortBy) {
+    const columns = ['name', 'price', 'created_at']; // Asegurar columnas válidas
+    if (columns.includes(sortBy)) {
+      query += ` ORDER BY ${sortBy}`;
+      if (order && (order.toUpperCase() === 'ASC' || order.toUpperCase() === 'DESC')) {
+        query += ` ${order.toUpperCase()}`;
+      } else {
+        query += ' ASC';
+      }
+    }
+  }
+
+  db.query(query, queryParams, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.status(200).json(results);
+  });
+};
+
